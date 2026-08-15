@@ -1,5 +1,15 @@
 .sidebar { min-height: 100vh; }
 .sidebar-bottom { padding: 16px 13px; }
+.account-actions { display: flex; align-items: center; gap: 12px; }
+.header-action { padding: 0; background: transparent; color: var(--purple); font-size: 12px; }
+.header-action:hover { color: #514bdc; }
+.profile-settings { max-width: 620px; margin-top: 24px; }
+.profile-settings form { display: grid; gap: 16px; max-width: 420px; }
+.profile-settings label { color: #5b5f74; font-size: 11px; }
+.profile-settings input { display: block; width: 100%; border: 1px solid #e0e2eb; border-radius: 7px; outline: 0; padding: 10px; margin-top: 7px; font-size: 12px; }
+.profile-settings input[readonly] { background: #f7f8fc; color: #9296aa; }
+.logout-panel { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--line); color: #5b5f74; font-size: 12px; }
+.logout-panel p { color: #9296aa; font-size: 11px; margin: 6px 0 0; }
 .sign-out-button { background: transparent; color: #7c8097; font-size: 12px; padding: 0; }
 .category-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 24px 0 14px; color: #74788e; font-size: 12px; }
 .category-filter span, .category-list span { background: var(--purple-soft); border-radius: 20px; color: var(--purple); padding: 6px 10px; }
