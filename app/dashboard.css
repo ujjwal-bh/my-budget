@@ -55,4 +55,19 @@ button:disabled { cursor: wait; opacity: .65; }
 .category-edit-input { flex: 1; border: 1px solid #e0e2eb; border-radius: 7px; outline: 0; padding: 8px 10px; font-size: 12px; }
 .form-hint { color: #d98086; font-size: 11px; margin: -5px 0 12px; }
 @media (max-width: 900px) { .goal-panel { grid-template-columns: 1fr; gap: 25px; } .main-grid { grid-template-columns: 1fr; } }
+.theme-toggle { display: grid; place-items: center; width: 29px; height: 29px; border: 1px solid var(--line); border-radius: 50%; background: transparent; color: #7c8097; }
+.theme-toggle:hover { color: var(--purple); border-color: var(--purple); }
+
+.dark-mode { --background: #171823; --foreground: #f1f2f8; --muted: #a9adc0; --line: #303344; --purple-soft: #292747; --sidebar: #1d1e2a; color-scheme: dark; }
+.dark-mode .topbar, .dark-mode .stat-card, .dark-mode .panel, .dark-mode .auth-card { background: #20212d; border-color: var(--line); }
+.dark-mode .brand, .dark-mode .back-brand, .dark-mode .page-heading h1, .dark-mode .panel-header h2, .dark-mode .annual-report h2, .dark-mode .goal-panel h2, .dark-mode .comparison-bars strong, .dark-mode .breadcrumb strong { color: #f1f2f8; }
+.dark-mode .nav-item:hover, .dark-mode .transaction-type-toggle { background: #292a38; }
+.dark-mode .date-filter, .dark-mode .range-select, .dark-mode .filter-button, .dark-mode .profile-settings input, .dark-mode .goal-form input, .dark-mode .category-form input, .dark-mode .category-edit-input, .dark-mode .modal select, .dark-mode .auth-form input { background: #292a38; border-color: #414457; color: #e4e5ed; }
+.dark-mode .profile-settings input[readonly] { background: #292a38; color: #a9adc0; }
+.dark-mode .month-input, .dark-mode .search-box input { color: #e4e5ed; }
+.dark-mode .transaction-type-toggle .toggle-active { background: #3a3b4d; }
+.dark-mode .comparison-progress, .dark-mode .goal-meter, .dark-mode .comparison-progress::-webkit-progress-bar, .dark-mode .goal-meter::-webkit-progress-bar { background: #393b4e; }
+.dark-mode .annual-bar, .dark-mode .annual-bar::-webkit-progress-bar { background: #34324f; }
+.dark-mode .auth-shell { background: radial-gradient(circle at 50% 10%, #292747 0, var(--background) 42%); }
+
 @media (max-width: 640px) { .sidebar { display: flex; } .goal-form, .category-form { align-items: stretch; flex-direction: column; } .year-bars { gap: 4px; } .year-bars strong { display: none; } .comparison-bars > div { grid-template-columns: 72px 74px 1fr; gap: 7px; } .row-action { padding: 3px; } }

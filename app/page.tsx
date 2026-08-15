@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import { bsMonthEnd, bsMonthStart, currentBsMonth, formatBsDate, formatBsMonth, isInBsMonth, nepaliMonths, previousBsMonth } from "@/lib/nepali-date";
-import { ArrowDownRight, ArrowUpRight, BarChart3, CreditCard, LayoutDashboard, Menu, Pencil, Plus, Target, Trash2, Wallet, X } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, BarChart3, CreditCard, LayoutDashboard, Menu, Moon, Pencil, Plus, Sun, Target, Trash2, Wallet, X } from "lucide-react";
 import "./dashboard.css";
 
 const supabase = getSupabaseBrowser();
@@ -38,12 +38,29 @@ export default function Home() {
   const [goal, setGoal] = useState("");
   const [profileName, setProfileName] = useState("");
   const [savingTransaction, setSavingTransaction] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    const storedTheme = window.localStorage.getItem("pocketwise-theme");
+    const isDark = storedTheme === "dark";
+    setDarkMode(isDark);
+    document.documentElement.classList.toggle("dark-mode", isDark);
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => { setSession(data.session); setReady(true); });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession));
     return () => listener.subscription.unsubscribe();
   }, []);
+
+  function toggleDarkMode() {
+    setDarkMode((current) => {
+      const next = !current;
+      document.documentElement.classList.toggle("dark-mode", next);
+      window.localStorage.setItem("pocketwise-theme", next ? "dark" : "light");
+      return next;
+    });
+  }
 
   const loadData = async (currentSession: Session) => {
     const headers = { Authorization: `Bearer ${currentSession.access_token}` };
@@ -121,7 +138,7 @@ export default function Home() {
 
   return <main className="app-shell">
     <aside className={`sidebar ${mobileNav ? "sidebar-open" : ""}`}><div className="brand"><span className="brand-mark"><Wallet size={18} /></span><span>pocketwise</span></div><nav className="primary-nav"><span className="nav-label">Workspace</span>{navItems.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${page === label ? "nav-item-active" : ""}`} onClick={() => { setPage(label); setMobileNav(false); }}><Icon size={18} /><span>{label}</span></button>)}</nav><div className="sidebar-bottom"><button className="sign-out-button" onClick={() => void supabase.auth.signOut()}>Sign out</button></div></aside>
-    <section className="content-area"><header className="topbar"><button className="mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open navigation"><Menu size={21} /></button><div className="breadcrumb"><span>Workspace</span><span>/</span><strong>{page}</strong></div><div className="account-actions"><span className="user-avatar small">{displayName.slice(0, 2).toUpperCase()}</span><button className="header-action" onClick={() => setPage("Settings")}>Profile</button><button className="header-action" onClick={() => void supabase.auth.signOut()}>Log out</button></div></header><div className="page-content">
+    <section className="content-area"><header className="topbar"><button className="mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open navigation"><Menu size={21} /></button><div className="breadcrumb"><span>Workspace</span><span>/</span><strong>{page}</strong></div><div className="account-actions"><button className="theme-toggle" onClick={toggleDarkMode} aria-label={`Switch to ${darkMode ? "light" : "dark"} mode`} title={`Switch to ${darkMode ? "light" : "dark"} mode`}>{darkMode ? <Sun size={17} /> : <Moon size={17} />}</button><span className="user-avatar small">{displayName.slice(0, 2).toUpperCase()}</span><button className="header-action" onClick={() => setPage("Settings")}>Profile</button><button className="header-action" onClick={() => void supabase.auth.signOut()}>Log out</button></div></header><div className="page-content">
       {page === "Overview" && <Overview displayName={displayName} month={selectedMonth} setMonth={setSelectedMonth} spent={spent} income={income} previousSpent={previousSpent} difference={difference} goal={spendingGoal} progress={goalProgress} transactions={monthTransactions} onAdd={openCreate} onEdit={openEdit} onDelete={deleteTransaction} onViewTransactions={() => setPage("Transactions")} />}
       {page === "Transactions" && <TransactionsPage transactions={transactions} categories={categories} onAdd={openCreate} onEdit={openEdit} onDelete={deleteTransaction} />}
       {page === "Reports" && <ReportsPage transactions={transactions} selectedMonth={selectedMonth} />}
