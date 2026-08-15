@@ -1,0 +1,47 @@
+.sidebar { min-height: 100vh; }
+.sidebar-bottom { padding: 16px 13px; }
+.sign-out-button { background: transparent; color: #7c8097; font-size: 12px; padding: 0; }
+.category-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 24px 0 14px; color: #74788e; font-size: 12px; }
+.category-filter span, .category-list span { background: var(--purple-soft); border-radius: 20px; color: var(--purple); padding: 6px 10px; }
+.transaction-table { margin-top: 0; }
+.full-list .transaction-row { padding: 15px 0; }
+.transaction-edit { flex: 1; background: transparent; border: 0; min-width: 0; padding: 0; text-align: left; }
+.row-action { background: transparent; color: #85899c; padding: 5px; }
+.row-action:hover { color: var(--purple); }
+.delete-action:hover { color: #d98086; }
+.empty-state { color: #9296aa; font-size: 12px; padding: 20px 0; }
+.comparison-bars { display: grid; gap: 20px; margin-top: 28px; }
+.comparison-bars > div { display: grid; grid-template-columns: 90px 90px 1fr; gap: 12px; align-items: center; color: #74788e; font-size: 12px; }
+.comparison-bars strong { color: #303449; font-size: 12px; }
+.comparison-progress, .goal-meter { appearance: none; display: block; width: 100%; height: 10px; overflow: hidden; border: 0; border-radius: 10px; background: #f0f1f6; }
+.comparison-progress::-webkit-progress-bar, .goal-meter::-webkit-progress-bar { background: #f0f1f6; }
+.comparison-progress::-webkit-progress-value, .goal-meter::-webkit-progress-value { border-radius: 10px; background: var(--purple); }
+.comparison-progress::-moz-progress-bar, .goal-meter::-moz-progress-bar { border-radius: 10px; background: var(--purple); }
+.previous-bar::-webkit-progress-value { background: #b8b6df; }
+.previous-bar::-moz-progress-bar { background: #b8b6df; }
+.goal-status { display: flex; justify-content: space-between; margin-top: 28px; padding-top: 15px; border-top: 1px solid var(--line); color: #7f849c; font-size: 12px; }
+.goal-status strong { color: #4d5065; }
+.annual-report { margin-top: 28px; }
+.annual-report h2, .goal-panel h2 { color: #2c2f44; font: 700 16px Manrope, sans-serif; margin: 0; }
+.year-bars { display: grid; grid-template-columns: repeat(12, 1fr); align-items: end; gap: 10px; height: 250px; margin-top: 26px; }
+.year-bars div { display: grid; grid-template-rows: 18px 1fr 20px; gap: 8px; align-items: end; min-width: 0; text-align: center; }
+.year-bars strong { color: #7f849c; font-size: 9px; overflow: hidden; text-overflow: ellipsis; }
+.annual-bar { appearance: none; width: 100%; height: 175px; overflow: hidden; border: 0; border-radius: 6px 6px 0 0; background: #f0efff; }
+.annual-bar::-webkit-progress-bar { background: #f0efff; }
+.annual-bar::-webkit-progress-value { background: var(--purple); }
+.annual-bar::-moz-progress-bar { background: var(--purple); }
+.year-bars span { color: #8e92a5; font-size: 10px; }
+.goal-panel { display: grid; grid-template-columns: 1fr minmax(260px, 340px); gap: 40px; align-items: center; margin-top: 24px; }
+.goal-progress { margin-top: 25px; }
+.goal-progress span { display: block; color: #85899c; font-size: 12px; margin-top: 9px; }
+.goal-form, .category-form { display: flex; gap: 10px; align-items: end; }
+.goal-form label, .category-form label { flex: 1; color: #5b5f74; font-size: 11px; }
+.goal-form input, .category-form input { display: block; width: 100%; border: 1px solid #e0e2eb; border-radius: 7px; outline: 0; padding: 10px; margin-top: 7px; font-size: 12px; }
+.category-form { margin-top: 26px; }
+.category-list { display: grid; gap: 8px; margin-top: 15px; }
+.category-row { display: flex; align-items: center; gap: 8px; min-height: 39px; border-bottom: 1px solid var(--line); }
+.category-row span { margin-right: auto; }
+.category-edit-input { flex: 1; border: 1px solid #e0e2eb; border-radius: 7px; outline: 0; padding: 8px 10px; font-size: 12px; }
+.form-hint { color: #d98086; font-size: 11px; margin: -5px 0 12px; }
+@media (max-width: 900px) { .goal-panel { grid-template-columns: 1fr; gap: 25px; } .main-grid { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .sidebar { display: none; } .goal-form, .category-form { align-items: stretch; flex-direction: column; } .year-bars { gap: 4px; } .year-bars strong { display: none; } .comparison-bars > div { grid-template-columns: 72px 74px 1fr; gap: 7px; } .row-action { padding: 3px; } }
