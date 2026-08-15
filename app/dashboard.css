@@ -3,6 +3,7 @@
 .account-actions { display: flex; align-items: center; gap: 12px; }
 .header-action { padding: 0; background: transparent; color: var(--purple); font-size: 12px; }
 .header-action:hover { color: #514bdc; }
+button:disabled { cursor: wait; opacity: .65; }
 .profile-settings { max-width: 620px; margin-top: 24px; }
 .profile-settings form { display: grid; gap: 16px; max-width: 420px; }
 .profile-settings label { color: #5b5f74; font-size: 11px; }
@@ -54,4 +55,4 @@
 .category-edit-input { flex: 1; border: 1px solid #e0e2eb; border-radius: 7px; outline: 0; padding: 8px 10px; font-size: 12px; }
 .form-hint { color: #d98086; font-size: 11px; margin: -5px 0 12px; }
 @media (max-width: 900px) { .goal-panel { grid-template-columns: 1fr; gap: 25px; } .main-grid { grid-template-columns: 1fr; } }
-@media (max-width: 640px) { .sidebar { display: none; } .goal-form, .category-form { align-items: stretch; flex-direction: column; } .year-bars { gap: 4px; } .year-bars strong { display: none; } .comparison-bars > div { grid-template-columns: 72px 74px 1fr; gap: 7px; } .row-action { padding: 3px; } }
+@media (max-width: 640px) { .sidebar { display: flex; } .goal-form, .category-form { align-items: stretch; flex-direction: column; } .year-bars { gap: 4px; } .year-bars strong { display: none; } .comparison-bars > div { grid-template-columns: 72px 74px 1fr; gap: 7px; } .row-action { padding: 3px; } }
