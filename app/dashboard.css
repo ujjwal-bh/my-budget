@@ -70,4 +70,100 @@ button:disabled { cursor: wait; opacity: .65; }
 .dark-mode .annual-bar, .dark-mode .annual-bar::-webkit-progress-bar { background: #34324f; }
 .dark-mode .auth-shell { background: radial-gradient(circle at 50% 10%, #292747 0, var(--background) 42%); }
 
-@media (max-width: 640px) { .sidebar { display: flex; } .goal-form, .category-form { align-items: stretch; flex-direction: column; } .year-bars { gap: 4px; } .year-bars strong { display: none; } .comparison-bars > div { grid-template-columns: 72px 74px 1fr; gap: 7px; } .row-action { padding: 3px; } }
+@media (max-width: 640px) { .sidebar { display: flex; } .goal-form, .category-form { align-items: stretch; flex-direction: column; } .year-bars { gap: 4px; } .year-bars strong { display: none; } .comparison-bars > div { grid-template-columns: 72px 74px 1fr; gap: 7px; } .row-action { padding: 3px; } .report-legend { gap: 10px; } .report-month-labels { font-size: 8px; } }
+
+.report-trend-panel { margin-top: 15px; }
+.report-legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 22px; color: #9699aa; font-size: 10px; }
+.report-legend span { display: flex; align-items: center; gap: 5px; }
+.report-line-chart { position: relative; height: 235px; margin-top: 18px; border-bottom: 1px solid var(--line); background: repeating-linear-gradient(to bottom, transparent 0, transparent 57px, #e8e9f0 58px); }
+.report-line-chart svg { position: absolute; inset: 0 0 24px; width: 100%; height: calc(100% - 24px); overflow: visible; }
+.report-trend-line { fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.expense-trend { stroke: var(--purple); }
+.income-trend { stroke: #74b990; }
+.goal-trend { stroke: #e6aa72; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
+.report-goal-point { fill: #e6aa72; stroke: white; stroke-width: .5; vector-effect: non-scaling-stroke; }
+.report-month-labels { position: absolute; right: 0; bottom: 4px; left: 0; display: grid; grid-template-columns: repeat(12, 1fr); color: #8e92a5; font-size: 10px; text-align: center; }
+.dark-mode .report-line-chart { background: repeating-linear-gradient(to bottom, transparent 0, transparent 57px, #393b4e 58px); }
+.dark-mode .report-goal-point { stroke: #20212d; }
+
+.stats-grid { grid-template-areas: "income spending spending goal" "income available available goal"; gap: 16px; padding: 28px 0 22px; }
+.stats-grid .stat-card { position: relative; min-height: 154px; overflow: hidden; border-color: #e7e8f0; border-radius: 16px; box-shadow: 0 10px 24px #2d304408; }
+.stats-grid .stat-card:nth-child(1) { grid-area: income; }
+.stats-grid .stat-card:nth-child(2) { grid-area: spending; }
+.stats-grid .stat-card:nth-child(3) { grid-area: available; }
+.stats-grid .stat-card:nth-child(4) { grid-area: goal; }
+.stats-grid .stat-card::after { position: absolute; content: ""; right: -22px; bottom: -38px; width: 112px; height: 112px; border: 20px solid currentColor; border-radius: 50%; opacity: .06; pointer-events: none; }
+.stats-grid .stat-card:nth-child(1), .stats-grid .stat-card:nth-child(4) { padding: 20px; }
+.stats-grid .stat-card:nth-child(2) { display: grid; grid-template-columns: auto 1fr; column-gap: 17px; align-items: center; padding: 20px 24px; background: linear-gradient(135deg, var(--purple) 0%, #7d76f7 100%); border-color: transparent; color: white; box-shadow: 0 15px 30px #625cf433; }
+.stats-grid .stat-card:nth-child(2)::after { right: 18px; bottom: -66px; width: 156px; height: 156px; border-width: 28px; opacity: .14; }
+.stats-grid .stat-card:nth-child(2) .stat-top { grid-row: span 3; align-self: center; }
+.stats-grid .stat-card:nth-child(2) .stat-icon { width: 46px; height: 46px; background: #ffffff1a; color: white; }
+.stats-grid .stat-card:nth-child(2) p, .stats-grid .stat-card:nth-child(2) small { color: #ffffffbf; }
+.stats-grid .stat-card:nth-child(2) > strong { color: white; font-size: clamp(22px, 3vw, 31px); letter-spacing: -1.1px; }
+.stats-grid .stat-card:nth-child(3) { min-height: 0; padding: 17px 20px; }
+.stats-grid .stat-card:nth-child(3) .stat-top { position: absolute; right: 20px; top: 18px; }
+.stats-grid .stat-card:nth-child(3) .stat-icon { background: #e9f6ee; color: #59a978; }
+.stats-grid .stat-card:nth-child(3) p { margin-top: 0; }
+.stats-grid .stat-card:nth-child(3) > strong { font-size: 21px; }
+.stats-grid .stat-card:nth-child(4) .stat-icon { background: #fff4e8; color: #d58d52; }
+.stats-grid .stat-card > strong { font-size: 23px; letter-spacing: -.7px; }
+.stats-grid .stat-card small { position: relative; z-index: 1; max-width: 150px; line-height: 1.45; }
+
+.main-grid { gap: 18px; }
+.main-grid .panel { border-radius: 16px; box-shadow: 0 10px 24px #2d304408; }
+.comparison-bars { gap: 14px; margin-top: 24px; }
+.comparison-bars > div { grid-template-columns: 84px minmax(76px, auto) 1fr; gap: 14px; padding: 10px 12px; border: 1px solid #f0f1f5; border-radius: 11px; background: #fafaff; }
+.comparison-progress { height: 8px; }
+.goal-status { margin-top: 22px; padding: 16px; border: 0; border-radius: 11px; background: var(--purple-soft); }
+
+.report-trend-panel { overflow: hidden; border-radius: 16px; box-shadow: 0 10px 24px #2d304408; }
+.report-trend-panel .panel-header { align-items: center; }
+.report-legend { gap: 10px; margin: 20px 0 0; }
+.report-legend span { padding: 6px 9px; border: 1px solid var(--line); border-radius: 20px; background: #fff; }
+.report-line-chart { height: 276px; margin-top: 18px; border: 1px solid #eef0f5; border-radius: 14px; background: repeating-linear-gradient(to bottom, #fbfbfd 0, #fbfbfd 64px, #eceef4 65px); }
+.report-line-chart svg { inset: 14px 14px 28px; width: calc(100% - 28px); height: calc(100% - 42px); }
+.report-trend-line { stroke-width: 2.5; filter: drop-shadow(0 3px 3px #383b611a); }
+.goal-trend { stroke-width: 2; }
+.report-goal-point { stroke-width: 1.5; filter: drop-shadow(0 2px 2px #b56b3040); }
+.report-month-labels { right: 14px; bottom: 8px; left: 14px; }
+.annual-report { padding: 4px 2px 0; }
+.annual-report h2 { font-size: 17px; }
+.year-bars { gap: 8px; height: 276px; margin-top: 22px; padding: 15px 10px 0; border: 1px solid #eef0f5; border-radius: 14px; background: linear-gradient(180deg, #fbfbfd 0%, #f8f8fc 100%); }
+.year-bars div { grid-template-rows: 17px 1fr 18px; gap: 7px; }
+.annual-bar { height: 192px; border-radius: 8px 8px 3px 3px; }
+.year-bars div:hover .annual-bar::-webkit-progress-value { background: #514bdc; }
+.year-bars div:hover .annual-bar::-moz-progress-bar { background: #514bdc; }
+
+.dark-mode .stats-grid .stat-card, .dark-mode .main-grid .panel, .dark-mode .report-trend-panel { border-color: var(--line); box-shadow: none; }
+.dark-mode .stats-grid .stat-card:nth-child(2) { border-color: transparent; }
+.dark-mode .stats-grid .stat-card:nth-child(3) .stat-icon { background: #243e32; color: #89d4a4; }
+.dark-mode .stats-grid .stat-card:nth-child(4) .stat-icon { background: #493827; color: #f0b77c; }
+.dark-mode .comparison-bars > div { border-color: #363849; background: #252633; }
+.dark-mode .goal-status { background: var(--purple-soft); }
+.dark-mode .report-legend span { border-color: var(--line); background: #292a38; }
+.dark-mode .report-line-chart { border-color: #363849; background: repeating-linear-gradient(to bottom, #252633 0, #252633 64px, #393b4e 65px); }
+.dark-mode .year-bars { border-color: #363849; background: linear-gradient(180deg, #252633 0%, #20212d 100%); }
+
+.combined-chart { position: relative; height: 330px; margin-top: 20px; padding: 16px 10px 0 76px; border: 1px solid #eef0f5; border-radius: 14px; background: #fbfbfd; }
+.combined-chart-grid { position: absolute; inset: 16px 10px 42px 0; display: flex; flex-direction: column; justify-content: space-between; color: #9da1b2; font-size: 9px; pointer-events: none; }
+.combined-chart-grid span { display: block; padding-left: 12px; }
+.combined-chart-grid span::after { position: absolute; right: 10px; left: 76px; border-top: 1px dashed #e4e6ee; content: ""; }
+.combined-bar-layer { position: absolute; inset: 16px 10px 42px 76px; width: calc(100% - 86px); height: calc(100% - 58px); overflow: visible; }
+.combined-bar-layer rect { stroke: transparent; stroke-width: 1; }
+.income-bar { fill: #74b990; }
+.expense-bar { fill: var(--purple); }
+.combined-bar-layer rect:hover { filter: brightness(.92); }
+.combined-goal-line { position: absolute; inset: 16px 10px 42px 76px; width: calc(100% - 86px); height: calc(100% - 58px); overflow: visible; pointer-events: none; }
+.combined-goal-line line { stroke: #e6aa72; stroke-width: 2; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.combined-goal-point { fill: #e6aa72; stroke: white; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.combined-chart-axis { position: absolute; right: 10px; bottom: 12px; left: 76px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); color: #8e92a5; font-size: 9px; text-align: center; }
+.combined-empty-state { position: absolute; inset: 50% 20px auto; transform: translateY(-50%); color: #9296aa; font-size: 12px; text-align: center; }
+.dark-mode .combined-chart { border-color: #363849; background: #252633; }
+.dark-mode .combined-chart-grid span::after { border-color: #414457; }
+.dark-mode .combined-bar::-webkit-progress-bar { background: #393b4e; }
+.dark-mode .combined-goal-point { stroke: #252633; }
+
+@media (max-width: 640px) { .combined-chart { height: 280px; padding-left: 58px; } .combined-chart-grid { inset: 16px 6px 42px 0; font-size: 8px; } .combined-chart-grid span { padding-left: 7px; } .combined-chart-grid span::after { right: 6px; left: 58px; } .combined-chart-bars { inset: 16px 6px 42px 58px; gap: 4px; } .combined-goal-line { inset: 16px 6px 42px 58px; width: calc(100% - 64px); height: calc(100% - 58px); } .combined-chart-axis { right: 6px; bottom: 12px; left: 58px; font-size: 8px; } }
+
+@media (max-width: 900px) { .stats-grid { grid-template-areas: "income spending" "goal available"; } }
+@media (max-width: 640px) { .stats-grid { grid-template-areas: "spending" "income" "available" "goal"; gap: 12px; } .stats-grid .stat-card { min-height: 126px; } .stats-grid .stat-card:nth-child(2) { min-height: 140px; padding: 18px; } .stats-grid .stat-card:nth-child(3) { min-height: 104px; } .comparison-bars > div { grid-template-columns: 70px 72px 1fr; gap: 8px; padding: 9px; } .report-line-chart { height: 235px; } .report-line-chart svg { inset: 12px 8px 28px; width: calc(100% - 16px); height: calc(100% - 40px); } .report-month-labels { right: 8px; left: 8px; } .year-bars { height: 238px; gap: 4px; padding: 12px 6px 0; } .annual-bar { height: 166px; } }

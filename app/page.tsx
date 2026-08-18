@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
-import { bsMonthEnd, bsMonthStart, currentBsMonth, formatBsDate, formatBsMonth, isInBsMonth, nepaliMonths, previousBsMonth } from "@/lib/nepali-date";
+import { bsMonthStart, currentBsMonth, formatBsDate, formatBsMonth, isInBsMonth, nepaliMonths, previousBsMonth } from "@/lib/nepali-date";
 import { ArrowDownRight, ArrowUpRight, BarChart3, CreditCard, LayoutDashboard, Menu, Moon, Pencil, Plus, Sun, Target, Trash2, Wallet, X } from "lucide-react";
 import "./dashboard.css";
 
@@ -16,13 +17,19 @@ type Page = "Overview" | "Transactions" | "Reports" | "Spending goal" | "Categor
 const navItems: { label: Page; icon: typeof LayoutDashboard }[] = [
   { label: "Overview", icon: LayoutDashboard }, { label: "Transactions", icon: CreditCard }, { label: "Reports", icon: BarChart3 }, { label: "Spending goal", icon: Target }, { label: "Categories", icon: Wallet }, { label: "Settings", icon: Target },
 ];
+const pagePaths: Record<Page, string> = { Overview: "/overview", Transactions: "/transactions", Reports: "/reports", "Spending goal": "/spending-goal", Categories: "/categories", Settings: "/settings" };
+function pageFromPath(pathname: string): Page { return (Object.keys(pagePaths) as Page[]).find((label) => pagePaths[label] === pathname) ?? "Overview"; }
 const currency = (value: number) => `NPR ${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const monthName = formatBsMonth;
+const goalMonthKey = (month: string) => bsMonthStart(month).toISOString().slice(0, 10);
 
 export default function Home() {
+  const pathname = usePathname();
+  const router = useRouter();
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
-  const [page, setPage] = useState<Page>("Overview");
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const page = pageFromPath(pathname);
   const [mobileNav, setMobileNav] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -38,14 +45,16 @@ export default function Home() {
   const [goal, setGoal] = useState("");
   const [profileName, setProfileName] = useState("");
   const [savingTransaction, setSavingTransaction] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => typeof window !== "undefined" && window.localStorage.getItem("pocketwise-theme") === "dark");
+
+  function navigateTo(nextPage: Page) {
+    setMobileNav(false);
+    router.push(pagePaths[nextPage]);
+  }
 
   useEffect(() => {
-    const storedTheme = window.localStorage.getItem("pocketwise-theme");
-    const isDark = storedTheme === "dark";
-    setDarkMode(isDark);
-    document.documentElement.classList.toggle("dark-mode", isDark);
-  }, []);
+    document.documentElement.classList.toggle("dark-mode", darkMode);
+  }, [darkMode]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => { setSession(data.session); setReady(true); });
@@ -63,18 +72,28 @@ export default function Home() {
   }
 
   const loadData = async (currentSession: Session) => {
-    const headers = { Authorization: `Bearer ${currentSession.access_token}` };
-    const [transactionResponse, categoryResponse, budgetResponse] = await Promise.all([
-      fetch("/api/transactions", { headers }),
-      supabase.from("categories").select("id, name").eq("user_id", currentSession.user.id).order("name"),
-      supabase.from("budgets").select("id, category, monthly_limit, month").eq("user_id", currentSession.user.id).order("created_at", { ascending: false }),
-    ]);
-    if (transactionResponse.ok) setTransactions(await transactionResponse.json());
-    setCategories((categoryResponse.data as Category[]) ?? []);
-    setBudgets((budgetResponse.data as Budget[]) ?? []);
+    setDataLoaded(false);
+    try {
+      const headers = { Authorization: `Bearer ${currentSession.access_token}` };
+      const [transactionResponse, categoryResponse, budgetResponse] = await Promise.all([
+        fetch("/api/transactions", { headers }),
+        supabase.from("categories").select("id, name").eq("user_id", currentSession.user.id).order("name"),
+        supabase.from("budgets").select("id, category, monthly_limit, month").eq("user_id", currentSession.user.id).order("created_at", { ascending: false }),
+      ]);
+      if (transactionResponse.ok) setTransactions(await transactionResponse.json());
+      setCategories((categoryResponse.data as Category[]) ?? []);
+      setBudgets((budgetResponse.data as Budget[]) ?? []);
+    } finally {
+      setDataLoaded(true);
+    }
   };
 
-  useEffect(() => { if (session) { void loadData(session); setProfileName(session.user.user_metadata.full_name ?? ""); } }, [session]);
+  useEffect(() => {
+    if (!session) return;
+    // The loader owns async loading state while synchronizing the authenticated workspace.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadData(session);
+  }, [session]);
 
   const monthTransactions = useMemo(() => transactions.filter((transaction) => isInBsMonth(transaction.date, selectedMonth)), [transactions, selectedMonth]);
   const spent = useMemo(() => monthTransactions.filter((transaction) => transaction.type === "expense").reduce((sum, transaction) => sum + Number(transaction.amount), 0), [monthTransactions]);
@@ -82,7 +101,7 @@ export default function Home() {
   const priorMonth = previousBsMonth(selectedMonth);
   const previousSpent = transactions.filter((transaction) => transaction.type === "expense" && isInBsMonth(transaction.date, priorMonth)).reduce((sum, transaction) => sum + Number(transaction.amount), 0);
   const difference = previousSpent ? ((spent - previousSpent) / previousSpent) * 100 : 0;
-  const spendingGoal = budgets.find((budget) => budget.category === "Overall spending" && isInBsMonth(budget.month, selectedMonth));
+  const spendingGoal = budgets.find((budget) => budget.category === "Overall spending" && budget.month.slice(0, 10) === goalMonthKey(selectedMonth));
   const goalProgress = spendingGoal ? Math.min((spent / Number(spendingGoal.monthly_limit)) * 100, 100) : 0;
 
   function openCreate() { setEditing(null); setMerchant(""); setAmount(""); setCategory(categories[0]?.name ?? "Other"); setType("expense"); setShowForm(true); }
@@ -117,8 +136,9 @@ export default function Home() {
 
   async function saveProfile(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!profileName.trim()) return;
-    const { data, error } = await supabase.auth.updateUser({ data: { full_name: profileName.trim() } });
+    const name = profileName.trim() || (session?.user.user_metadata.full_name ?? session?.user.email?.split("@")[0] ?? "");
+    if (!name) return;
+    const { data, error } = await supabase.auth.updateUser({ data: { full_name: name } });
     if (!error && data.user) setSession((current) => current ? { ...current, user: data.user } : current);
   }
 
@@ -126,7 +146,7 @@ export default function Home() {
     event.preventDefault();
     if (!session || !goal) return;
     const existing = spendingGoal;
-    const payload = { user_id: session.user.id, category: "Overall spending", monthly_limit: Number(goal), month: bsMonthStart(selectedMonth).toISOString() };
+    const payload = { user_id: session.user.id, category: "Overall spending", monthly_limit: Number(goal), month: goalMonthKey(selectedMonth) };
     const request = existing ? supabase.from("budgets").update(payload as never).eq("id", existing.id).select("id, category, monthly_limit, month").single() : supabase.from("budgets").insert(payload as never).select("id, category, monthly_limit, month").single();
     const { data } = await request;
     if (data) { setBudgets((current) => existing ? current.map((budget) => budget.id === data.id ? data as Budget : budget) : [data as Budget, ...current]); setGoal(""); }
@@ -134,17 +154,18 @@ export default function Home() {
 
   if (!ready) return <main className="auth-loading">Loading your workspace…</main>;
   if (!session) return <AuthScreen />;
+  if (!dataLoaded) return <main className="auth-loading">Loading your workspace…</main>;
   const displayName = session.user.user_metadata.full_name ?? session.user.email?.split("@")[0] ?? "there";
 
   return <main className="app-shell">
-    <aside className={`sidebar ${mobileNav ? "sidebar-open" : ""}`}><div className="brand"><span className="brand-mark"><Wallet size={18} /></span><span>pocketwise</span></div><nav className="primary-nav"><span className="nav-label">Workspace</span>{navItems.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${page === label ? "nav-item-active" : ""}`} onClick={() => { setPage(label); setMobileNav(false); }}><Icon size={18} /><span>{label}</span></button>)}</nav><div className="sidebar-bottom"><button className="sign-out-button" onClick={() => void supabase.auth.signOut()}>Sign out</button></div></aside>
-    <section className="content-area"><header className="topbar"><button className="mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open navigation"><Menu size={21} /></button><div className="breadcrumb"><span>Workspace</span><span>/</span><strong>{page}</strong></div><div className="account-actions"><button className="theme-toggle" onClick={toggleDarkMode} aria-label={`Switch to ${darkMode ? "light" : "dark"} mode`} title={`Switch to ${darkMode ? "light" : "dark"} mode`}>{darkMode ? <Sun size={17} /> : <Moon size={17} />}</button><span className="user-avatar small">{displayName.slice(0, 2).toUpperCase()}</span><button className="header-action" onClick={() => setPage("Settings")}>Profile</button><button className="header-action" onClick={() => void supabase.auth.signOut()}>Log out</button></div></header><div className="page-content">
-      {page === "Overview" && <Overview displayName={displayName} month={selectedMonth} setMonth={setSelectedMonth} spent={spent} income={income} previousSpent={previousSpent} difference={difference} goal={spendingGoal} progress={goalProgress} transactions={monthTransactions} onAdd={openCreate} onEdit={openEdit} onDelete={deleteTransaction} onViewTransactions={() => setPage("Transactions")} />}
+    <aside className={`sidebar ${mobileNav ? "sidebar-open" : ""}`}><div className="brand"><span className="brand-mark"><Wallet size={18} /></span><span>pocketwise</span></div><nav className="primary-nav"><span className="nav-label">Workspace</span>{navItems.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${page === label ? "nav-item-active" : ""}`} onClick={() => navigateTo(label)}><Icon size={18} /><span>{label}</span></button>)}</nav><div className="sidebar-bottom"><button className="sign-out-button" onClick={() => void supabase.auth.signOut()}>Sign out</button></div></aside>
+    <section className="content-area"><header className="topbar"><button className="mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open navigation"><Menu size={21} /></button><div className="breadcrumb"><span>Workspace</span><span>/</span><strong>{page}</strong></div><div className="account-actions"><button className="theme-toggle" onClick={toggleDarkMode} aria-label={`Switch to ${darkMode ? "light" : "dark"} mode`} title={`Switch to ${darkMode ? "light" : "dark"} mode`}>{darkMode ? <Sun size={17} /> : <Moon size={17} />}</button><span className="user-avatar small">{displayName.slice(0, 2).toUpperCase()}</span><button className="header-action" onClick={() => navigateTo("Settings")}>Profile</button><button className="header-action" onClick={() => void supabase.auth.signOut()}>Log out</button></div></header><div className="page-content">
+      {page === "Overview" && <Overview displayName={displayName} month={selectedMonth} setMonth={setSelectedMonth} spent={spent} income={income} previousSpent={previousSpent} difference={difference} goal={spendingGoal} progress={goalProgress} transactions={monthTransactions} onAdd={openCreate} onEdit={openEdit} onDelete={deleteTransaction} onViewTransactions={() => navigateTo("Transactions")} />}
       {page === "Transactions" && <TransactionsPage transactions={transactions} categories={categories} onAdd={openCreate} onEdit={openEdit} onDelete={deleteTransaction} />}
-      {page === "Reports" && <ReportsPage transactions={transactions} selectedMonth={selectedMonth} />}
+      {page === "Reports" && <CombinedReportsPage transactions={transactions} budgets={budgets} selectedMonth={selectedMonth} />}
       {page === "Spending goal" && <GoalPage month={selectedMonth} setMonth={setSelectedMonth} spent={spent} goal={spendingGoal} progress={goalProgress} value={goal} setValue={setGoal} onSave={saveGoal} />}
       {page === "Categories" && <CategoriesPage session={session} categories={categories} setCategories={setCategories} value={newCategory} setValue={setNewCategory} onAdd={addCategory} />}
-      {page === "Settings" && <SettingsPage email={session.user.email ?? ""} name={profileName} setName={setProfileName} onSave={saveProfile} onSignOut={() => void supabase.auth.signOut()} />}
+      {page === "Settings" && <SettingsPage email={session.user.email ?? ""} name={profileName || displayName} setName={setProfileName} onSave={saveProfile} onSignOut={() => void supabase.auth.signOut()} />}
     </div></section>
     {mobileNav && <button className="mobile-overlay" onClick={() => setMobileNav(false)} aria-label="Close navigation" />}
     {showForm && <TransactionForm saving={savingTransaction} editing={editing} merchant={merchant} amount={amount} category={category} type={type} categories={categories} setMerchant={setMerchant} setAmount={setAmount} setCategory={setCategory} setType={setType} onClose={() => setShowForm(false)} onSubmit={saveTransaction} />}
@@ -154,7 +175,56 @@ export default function Home() {
 function BsMonthPicker({ value, onChange }: { value: string; onChange: (value: string) => void }) { const year = Number(value.slice(0, 4)); return <span className="bs-month-picker"><select className="month-input" value={year} onChange={(event) => onChange(`${event.target.value}-${value.slice(5)}`)} aria-label="BS year">{[year - 2, year - 1, year, year + 1, year + 2].map((item) => <option key={item} value={item}>{item}</option>)}</select><select className="month-input" value={value.slice(5)} onChange={(event) => onChange(`${year}-${event.target.value}`)} aria-label="BS month">{nepaliMonths.map((item, index) => <option key={item} value={String(index + 1).padStart(2, "0")}>{item}</option>)}</select></span> }
 function Overview({ displayName, month, setMonth, spent, income, previousSpent, difference, goal, progress, transactions, onAdd, onEdit, onDelete, onViewTransactions }: { displayName: string; month: string; setMonth: (value: string) => void; spent: number; income: number; previousSpent: number; difference: number; goal?: Budget; progress: number; transactions: Transaction[]; onAdd: () => void; onEdit: (transaction: Transaction) => void; onDelete: (id: number) => void; onViewTransactions: () => void }) { return <><div className="page-heading"><div><p className="eyebrow">{monthName(month)}</p><h1>Hello, {displayName}</h1><p className="heading-copy">Track your income and keep your spending on course.</p></div><button className="add-button" onClick={onAdd}><Plus size={17} />Add transaction</button></div><div className="filter-row"><label className="date-filter">BS month <BsMonthPicker value={month} onChange={setMonth} /></label></div><div className="stats-grid"><StatCard label="Income" value={currency(income)} detail="for this month" icon={<ArrowDownRight size={18} />} /><StatCard label="Spent" value={currency(spent)} detail={previousSpent ? `${Math.abs(difference).toFixed(1)}% ${difference > 0 ? "more" : "less"} than last month` : "no prior-month data"} icon={<ArrowUpRight size={18} />} /><StatCard label="Available" value={currency(income - spent)} detail="income minus expenses" icon={<Wallet size={18} />} /><StatCard label="Spending goal" value={goal ? currency(Number(goal.monthly_limit)) : "Not set"} detail={goal ? `${progress.toFixed(0)}% used` : "set a monthly limit"} icon={<Target size={18} />} /></div><div className="main-grid"><section className="panel"><div className="panel-header"><div><h2>Monthly spending</h2><p>{previousSpent ? `${currency(spent)} compared with ${currency(previousSpent)} last month` : "Add transactions to see monthly comparisons."}</p></div></div><div className="comparison-bars"><div><span>This month</span><strong>{currency(spent)}</strong><progress className="comparison-progress current-bar" value={Math.max(4, goal ? progress : 55)} max="100" /></div><div><span>Last month</span><strong>{currency(previousSpent)}</strong><progress className="comparison-progress previous-bar" value={Math.max(4, previousSpent && spent ? Math.min((previousSpent / Math.max(spent, previousSpent)) * 100, 100) : 4)} max="100" /></div></div>{goal && <div className="goal-status"><span>Monthly limit: {currency(Number(goal.monthly_limit))}</span><strong>{progress > 100 ? "Over target" : `${currency(Math.max(Number(goal.monthly_limit) - spent, 0))} remaining`}</strong></div>}</section><section className="panel transactions-panel"><div className="panel-header"><div><h2>Recent transactions</h2><p>Click a transaction to edit it.</p></div><button className="view-all" onClick={onViewTransactions}>View all</button></div><TransactionList transactions={transactions.slice(0, 5)} onEdit={onEdit} onDelete={onDelete} compact /></section></div></> }
 function TransactionsPage({ transactions, categories, onAdd, onEdit, onDelete }: { transactions: Transaction[]; categories: Category[]; onAdd: () => void; onEdit: (transaction: Transaction) => void; onDelete: (id: number) => void }) { return <><div className="page-heading"><div><p className="eyebrow">All activity</p><h1>Transactions</h1><p className="heading-copy">Every income and expense is linked to a category.</p></div><button className="add-button" onClick={onAdd}><Plus size={17} />Add transaction</button></div><div className="category-filter"><strong>Categories:</strong>{categories.map((item) => <span key={item.id}>{item.name}</span>)}</div><section className="panel transaction-table"><TransactionList transactions={transactions} onEdit={onEdit} onDelete={onDelete} /></section></> }
-function ReportsPage({ transactions, selectedMonth }: { transactions: Transaction[]; selectedMonth: string }) { const year = Number(selectedMonth.slice(0, 4)); const months = Array.from({ length: 12 }, (_, index) => `${year}-${String(index + 1).padStart(2, "0")}`); const maximum = Math.max(...months.map((month) => transactions.filter((t) => t.type === "expense" && isInBsMonth(t.date, month)).reduce((sum, t) => sum + Number(t.amount), 0)), 1); return <><div className="page-heading"><div><p className="eyebrow">{year} summary</p><h1>Spending reports</h1><p className="heading-copy">Compare your spending across months and years.</p></div></div><section className="panel annual-report"><h2>Monthly expenses in {year}</h2><div className="year-bars">{months.map((month) => { const value = transactions.filter((t) => t.type === "expense" && isInBsMonth(t.date, month)).reduce((sum, t) => sum + Number(t.amount), 0); return <div key={month}><strong>{currency(value)}</strong><progress className="annual-bar" value={Math.max(3, (value / maximum) * 100)} max="100" /><span>{nepaliMonths[Number(month.slice(5)) - 1].slice(0, 3)}</span></div>; })}</div></section></> }
+function CombinedReportsPage({ transactions, budgets, selectedMonth }: { transactions: Transaction[]; budgets: Budget[]; selectedMonth: string }) {
+  const year = Number(selectedMonth.slice(0, 4));
+  const months = Array.from({ length: 12 }, (_, index) => `${year}-${String(index + 1).padStart(2, "0")}`);
+  const monthlyData = months.map((month) => ({
+    month,
+    expense: transactions
+      .filter((transaction) => transaction.type === "expense" && isInBsMonth(transaction.date, month))
+      .reduce((sum, transaction) => sum + Number(transaction.amount), 0),
+    income: transactions
+      .filter((transaction) => transaction.type === "income" && isInBsMonth(transaction.date, month))
+      .reduce((sum, transaction) => sum + Number(transaction.amount), 0),
+    goal: budgets.find((budget) => budget.category === "Overall spending" && budget.month.slice(0, 10) === goalMonthKey(month))?.monthly_limit,
+  }));
+  const maximum = Math.max(...monthlyData.flatMap((item) => [item.expense, item.income, Number(item.goal ?? 0)]), 1);
+  const chartPoint = (value: number, index: number) => ({
+    x: ((index + 0.5) / months.length) * 100,
+    y: 100 - (value / maximum) * 100,
+  });
+  const goalPoints = monthlyData.flatMap((item, index) => item.goal === undefined ? [] : [chartPoint(Number(item.goal), index)]);
+  const goalSegments = goalPoints.slice(1).map((point, index) => ({ start: goalPoints[index], end: point }));
+  const hasChartData = monthlyData.some((item) => item.expense > 0 || item.income > 0 || item.goal !== undefined);
+
+  return <>
+    <div className="page-heading"><div><p className="eyebrow">{year} summary</p><h1>Spending reports</h1><p className="heading-copy">Compare your income, spending, and monthly limits across the year.</p></div></div>
+    <section className="panel annual-report"><h2>Monthly expenses in {year}</h2><div className="year-bars">{monthlyData.map((item) => <div key={item.month}><strong>{currency(item.expense)}</strong><progress className="annual-bar" value={Math.max(3, (item.expense / maximum) * 100)} max="100" /><span>{nepaliMonths[Number(item.month.slice(5)) - 1].slice(0, 3)}</span></div>)}</div></section>
+    <section className="panel report-trend-panel">
+      <div className="panel-header"><div><h2>Income, expenses, and goals</h2><p>Monthly totals compared with your saved spending limit.</p></div></div>
+      <div className="report-legend"><span><i className="legend-dot green" />Income</span><span><i className="legend-dot indigo" />Expenditure</span><span><i className="legend-dot orange" />Spending goal</span></div>
+      <div className="combined-chart" role="img" aria-label={`Income, expenditure, and spending goals for ${year}`}>
+        <div className="combined-chart-grid" aria-hidden="true">{[100, 75, 50, 25, 0].map((value) => <span key={value}>{currency(maximum * value / 100)}</span>)}</div>
+        <svg className="combined-bar-layer" viewBox="0 0 1200 100" preserveAspectRatio="none" aria-hidden="true">
+          {monthlyData.map((item, index) => {
+            const incomeHeight = (item.income / maximum) * 100;
+            const expenseHeight = (item.expense / maximum) * 100;
+            return <g className="combined-chart-month" key={item.month}>
+              <rect className="income-bar" x={index * 100 + 22} y={100 - incomeHeight} width="24" height={incomeHeight} rx="4" />
+              <rect className="expense-bar" x={index * 100 + 54} y={100 - expenseHeight} width="24" height={expenseHeight} rx="4" />
+            </g>;
+          })}
+        </svg>
+        <svg className="combined-goal-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          {goalSegments.map(({ start, end }, index) => <line key={`${index}-${start.x}-${end.x}`} x1={start.x} y1={start.y} x2={end.x} y2={end.y} />)}
+          {monthlyData.map((item, index) => item.goal !== undefined && <circle key={item.month} className="combined-goal-point" cx={chartPoint(Number(item.goal), index).x} cy={chartPoint(Number(item.goal), index).y} r="1.3" />)}
+        </svg>
+        <div className="combined-chart-axis">{months.map((month) => <span key={month}>{nepaliMonths[Number(month.slice(5)) - 1].slice(0, 3)}</span>)}</div>
+        {!hasChartData && <p className="combined-empty-state">No income, expenditure, or spending goal data for this year.</p>}
+      </div>
+    </section>
+  </>;
+}
 function GoalPage({ month, setMonth, spent, goal, progress, value, setValue, onSave }: { month: string; setMonth: (value: string) => void; spent: number; goal?: Budget; progress: number; value: string; setValue: (value: string) => void; onSave: (event: React.FormEvent<HTMLFormElement>) => void }) { return <><div className="page-heading"><div><p className="eyebrow">Spend intentionally</p><h1>Monthly spending goal</h1><p className="heading-copy">Set the most you want to spend each month.</p></div></div><div className="filter-row"><label className="date-filter">BS month <BsMonthPicker value={month} onChange={setMonth} /></label></div><section className="panel goal-panel"><div><p className="eyebrow">{monthName(month)}</p><h2>{goal ? `${currency(spent)} of ${currency(Number(goal.monthly_limit))}` : "No spending limit set"}</h2><div className="goal-progress"><progress className="goal-meter" value={progress} max="100" /><span>{goal ? `${progress.toFixed(0)}% of your limit used` : "Create a limit to track your progress."}</span></div></div><form onSubmit={onSave} className="goal-form"><label>Monthly spending limit<input type="number" min="0" step="0.01" value={value} onChange={(event) => setValue(event.target.value)} placeholder={goal ? String(goal.monthly_limit) : "e.g. 2000"} required /></label><button className="add-button">Save goal</button></form></section></> }
 function SettingsPage({ email, name, setName, onSave, onSignOut }: { email: string; name: string; setName: (value: string) => void; onSave: (event: React.FormEvent<HTMLFormElement>) => void; onSignOut: () => void }) { return <><div className="page-heading"><div><p className="eyebrow">Account preferences</p><h1>Profile settings</h1><p className="heading-copy">Update the details used in your Pocketwise workspace.</p></div></div><section className="panel profile-settings"><form onSubmit={onSave}><label>Display name<input value={name} onChange={(event) => setName(event.target.value)} placeholder="Your name" required /></label><label>Email address<input value={email} readOnly /></label><button className="add-button">Save profile</button></form><div className="logout-panel"><div><strong>Sign out</strong><p>End your current Pocketwise session on this device.</p></div><button className="header-action" onClick={onSignOut}>Log out</button></div></section></> }
 function CategoriesPage({ session, categories, setCategories, value, setValue, onAdd }: { session: Session; categories: Category[]; setCategories: React.Dispatch<React.SetStateAction<Category[]>>; value: string; setValue: (value: string) => void; onAdd: (event: React.FormEvent<HTMLFormElement>) => void }) { const [editingId, setEditingId] = useState<number | null>(null); const [editingName, setEditingName] = useState(""); async function saveCategory(id: number) { const name = editingName.trim(); if (!name) return; const current = categories.find((item) => item.id === id); if (!current) return; const { data } = await supabase.from("categories").update({ name } as never).eq("id", id).eq("user_id", session.user.id).select("id, name").single(); if (data) { await supabase.from("transactions").update({ category: name } as never).eq("user_id", session.user.id).eq("category", current.name); setCategories((items) => items.map((item) => item.id === id ? data as Category : item).sort((a, b) => a.name.localeCompare(b.name))); setEditingId(null); } } async function removeCategory(item: Category) { await supabase.from("transactions").update({ category: "Other" } as never).eq("user_id", session.user.id).eq("category", item.name); const { error } = await supabase.from("categories").delete().eq("id", item.id).eq("user_id", session.user.id); if (!error) setCategories((items) => items.filter((category) => category.id !== item.id)); } return <><div className="page-heading"><div><p className="eyebrow">Organize transaction labels</p><h1>Categories</h1><p className="heading-copy">Rename or remove categories used by your transactions.</p></div></div><form className="panel category-form" onSubmit={onAdd}><label>New category<input value={value} onChange={(event) => setValue(event.target.value)} placeholder="e.g. Groceries" required /></label><button className="add-button">Add category</button></form><section className="panel category-list">{categories.length ? categories.map((item) => <div className="category-row" key={item.id}>{editingId === item.id ? <><input className="category-edit-input" value={editingName} onChange={(event) => setEditingName(event.target.value)} autoFocus /><button className="row-action" onClick={() => void saveCategory(item.id)}>Save</button><button className="row-action" onClick={() => setEditingId(null)}>Cancel</button></> : <><span>{item.name}</span><button className="row-action" onClick={() => { setEditingId(item.id); setEditingName(item.name); }} aria-label={`Edit ${item.name}`}><Pencil size={15} /></button><button className="row-action delete-action" onClick={() => void removeCategory(item)} aria-label={`Delete ${item.name}`}><Trash2 size={15} /></button></>}</div>) : <p>No categories yet. Add one to use it in transactions.</p>}</section></> }
